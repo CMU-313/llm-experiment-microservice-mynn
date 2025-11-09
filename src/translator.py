@@ -1,60 +1,122 @@
-def translate_content(content: str) -> tuple[bool, str]:
-    if content == "这是一条中文消息":
-        return False, "This is a Chinese message"
-    if content == "Ceci est un message en français":
-        return False, "This is a French message"
-    if content == "Esta es un mensaje en español":
-        return False, "This is a Spanish message"
-    if content == "Esta é uma mensagem em português":
-        return False, "This is a Portuguese message"
-    if content  == "これは日本語のメッセージです":
-        return False, "This is a Japanese message"
-    if content == "이것은 한국어 메시지입니다":
-        return False, "This is a Korean message"
-    if content == "Dies ist eine Nachricht auf Deutsch":
-        return False, "This is a German message"
-    if content == "Questo è un messaggio in italiano":
-        return False, "This is an Italian message"
-    if content == "Это сообщение на русском":
-        return False, "This is a Russian message"
-    if content == "هذه رسالة باللغة العربية":
-        return False, "This is an Arabic message"
-    if content == "यह हिंदी में संदेश है":
-        return False, "This is a Hindi message"
-    if content == "นี่คือข้อความภาษาไทย":
-        return False, "This is a Thai message"
-    if content == "Bu bir Türkçe mesajdır":
-        return False, "This is a Turkish message"
-    if content == "Đây là một tin nhắn bằng tiếng Việt":
-        return False, "This is a Vietnamese message"
-    if content == "Esto es un mensaje en catalán":
-        return False, "This is a Catalan message"
-    if content == "asldkfjaslkdfj":
-        return False, "[Translation unavailable]"
-    if content == "This is an English message":
-        return True, "This is an English message"
-    return True, content
+import os
+from ollama import chat, ChatResponse, Client
 
-def query_llm_robust(text: str) -> tuple[bool, str]:
+# Get OLLAMA_HOST, if specified, or default to localhost:11434.
+OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
+MODEL_NAME = "llama3.1:8b"
+
+# Initialize the OpenAI client
+client = Client(host=OLLAMA_URL)
+
+def get_translation(post: str) -> str:
+   context = """
+       You are a language translator.
+       Translate the input text and reply only with the English translation of that text.
+       If the input text cannot be translated or is gibberish, simply return the
+       input text.
+   """
+   try:
+     response = chat(
+         model=MODEL_NAME,
+         messages=[
+             {"role": "system", "content": context},
+             {"role": "user", "content": post}
+         ]
+     )
+
+
+     translation = response.message.content
+     if not translation:
+        return "[Translation unfound]"
+     return translation
+
+   except Exception as e:
+       return f"[Error: {str(e)}]"
+
+def get_language(post: str) -> str:
+    context = """
+        You are a language classifier.
+        Detect the language of the input text and reply only with the English name of that language.
     """
-    Hardcoded fallback to simulate robust LLM behavior,
-    but without calling any external model.
-    """
-    if "Bonjour, comment ça va?" in text:
-        return False, "Hello, how are you today?"
-    if "Hier ist" in text:
-        return False, "Here is your first example."
-    if "Hola" in text:
-        return False, "Hello, how are you?"
-    if "Ciao" in text:
-        return False, "Hi! How are you?"
-    if "今日は" in text or "これは日本語です" in text:
-        return False, "It is very hot today."
-    if "asldkfjaslkdfj" in text:
-        return False, "[Translation unavailable]"
-    if not text or text.strip() == "":
-        return False, "[Translation unavailable]"
-    if any(ch in text for ch in ["%", "!", "@", "#", "$", "^", "&", "*", "?", "¿"]):
-        return False, "[Translation unavailable]"
-    # English default or unknown fallback
-    return True, text
+
+    try:
+        response = client.chat(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": context.strip()},
+                {"role": "user", "content": post}
+            ]
+        )
+        detected_lang = response.message.content.strip().capitalize()
+
+        if not detected_lang:
+            return "[Language undetected]"
+        return detected_lang
+
+    except Exception as e:
+        return f"[Error: {str(e)}]"
+
+def query_llm(post: str) -> tuple[bool, str]:
+    if not post or not isinstance(post, str) or not post.strip():
+        return (False, "[Invalid Input]")
+    
+    lang = get_language(post).strip().lower()
+
+    if "english" in lang:
+        return (True, post)
+    
+    translation = get_translation(post).strip()
+    
+    if not translation:
+        translation = post
+    return (False, translation)
+
+def query_llm_robust(post: str) -> tuple[bool, str]:
+    MAX_LEN = 4096
+    try:
+       # input validation
+       if not isinstance(post, str) or not post.strip():
+           return (False, "[Invalid input]")
+       if len(post) > MAX_LEN:
+           post = post[:MAX_LEN]  # truncate to safe length
+
+       # language detection
+       try:
+           lang = get_language(post)
+           lang = lang.strip().lower() if isinstance(lang, str) else ""
+       except Exception:
+           return (False, post)
+
+       if "english" in lang:
+           return (True, post)
+
+       # translation
+       try:
+           translation = get_translation(post)
+           if not isinstance(translation, str):
+               translation = ""
+           translation = translation.strip().replace("\x00", "")
+       except Exception:
+           return (False, post)
+
+       # if translation empty or suspicious, return original
+       if not translation or len(translation) > MAX_LEN:
+           return (False, post)
+
+       # secondary check: ensure translation is in English
+       try:
+           translated_lang = get_language(translation)
+           translated_lang = translated_lang.strip().lower() if isinstance(translated_lang, str) else ""
+           if "english" not in translated_lang:
+               # model didn’t translate properly — fallback to original
+               return (False, post)
+       except Exception:
+           # if language check fails, still fallback safely
+           return (False, post)
+
+       # successful case
+       return (False, translation)
+
+    except Exception:
+        # last-resort fallback
+        return (False, post)
