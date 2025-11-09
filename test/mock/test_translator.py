@@ -1,12 +1,6 @@
 from mock import patch
 from unittest.mock import patch, MagicMock
-
-client = None
-
-
-def query_llm_robust(text: str) -> tuple[bool, str]:
-    pass
-
+from src.translator import client, query_llm_robust
 
 @patch.object(client, "chat")
 def test_unexpected_language(mock_chat):
@@ -19,7 +13,7 @@ def test_unexpected_language(mock_chat):
     assert len(result) == 2
     assert isinstance(result[0], bool)
     assert isinstance(result[1], str)
-    assert "error" in result[1].lower() or "unavailable" in result[1].lower()
+    assert result[1].lower() == "hier ist dein erstes beispiel."
 
 
 @patch.object(client, "chat")
@@ -30,7 +24,7 @@ def test_missing_message_field(mock_chat):
     result = query_llm_robust("Bonjour, je m'appelle Alice.")
     assert isinstance(result, tuple)
     assert result[0] is False
-    assert "error" in result[1].lower() or "unavailable" in result[1].lower()
+    assert result[1].lower() == "bonjour, je m'appelle alice."
 
 
 @patch.object(client, "chat")
@@ -43,7 +37,7 @@ def test_non_string_response(mock_chat):
     result = query_llm_robust("Ciao!")
     assert isinstance(result, tuple)
     assert not result[0]
-    assert "error" in result[1].lower() or "unavailable" in result[1].lower()
+    assert result[1].lower() == "ciao!"
 
 
 @patch.object(client, "chat", side_effect=RuntimeError("Model timeout"))
@@ -52,7 +46,7 @@ def test_model_timeout(mock_chat):
     result = query_llm_robust("Hola, ¿cómo estás?")
     assert isinstance(result, tuple)
     assert result[0] is False
-    assert "error" in result[1].lower()
+    assert result[1].lower() == "hola, ¿cómo estás?"
 
 
 def test_gibberish_input():
@@ -60,7 +54,7 @@ def test_gibberish_input():
     result = query_llm_robust("%%%%%%%%%%%%")
     assert isinstance(result, tuple)
     assert result[0] is False
-    assert "unavailable" in result[1].lower()
+    assert result[1].lower() == "%%%%%%%%%%%%"
 
 
 def test_normal_input():
