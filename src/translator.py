@@ -17,10 +17,10 @@ def get_translation(post: str) -> str:
        input text.
    """
     try:
-        response = chat(
+        response = client.chat(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": context},
+                {"role": "system", "content": context.strip()},
                 {"role": "user", "content": post}
             ]
         )
