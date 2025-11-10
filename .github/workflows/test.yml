@@ -28,4 +28,6 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+        env:
+          OLLAMA_HOST: ${{ secrets.OLLAMA_HOST }}
 
