@@ -8,30 +8,31 @@ MODEL_NAME = "llama3.1:8b"
 # Initialize the OpenAI client
 client = Client(host=OLLAMA_URL)
 
+
 def get_translation(post: str) -> str:
-   context = """
+    context = """
        You are a language translator.
        Translate the input text and reply only with the English translation of that text.
        If the input text cannot be translated or is gibberish, simply return the
        input text.
    """
-   try:
-     response = chat(
-         model=MODEL_NAME,
-         messages=[
-             {"role": "system", "content": context},
-             {"role": "user", "content": post}
-         ]
-     )
+    try:
+        response = chat(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": post}
+            ]
+        )
 
+        translation = response.message.content
+        if not translation:
+            return "[Translation unfound]"
+        return translation
 
-     translation = response.message.content
-     if not translation:
-        return "[Translation unfound]"
-     return translation
+    except Exception as e:
+        return f"[Error: {str(e)}]"
 
-   except Exception as e:
-       return f"[Error: {str(e)}]"
 
 def get_language(post: str) -> str:
     context = """
@@ -56,66 +57,69 @@ def get_language(post: str) -> str:
     except Exception as e:
         return f"[Error: {str(e)}]"
 
+
 def query_llm(post: str) -> tuple[bool, str]:
     if not post or not isinstance(post, str) or not post.strip():
         return (False, "[Invalid Input]")
-    
+
     lang = get_language(post).strip().lower()
 
     if "english" in lang:
         return (True, post)
-    
+
     translation = get_translation(post).strip()
-    
+
     if not translation:
         translation = post
     return (False, translation)
 
+
 def query_llm_robust(post: str) -> tuple[bool, str]:
     MAX_LEN = 4096
     try:
-       # input validation
-       if not isinstance(post, str) or not post.strip():
-           return (False, "[Invalid input]")
-       if len(post) > MAX_LEN:
-           post = post[:MAX_LEN]  # truncate to safe length
+        # input validation
+        if not isinstance(post, str) or not post.strip():
+            return (False, "[Invalid input]")
+        if len(post) > MAX_LEN:
+            post = post[:MAX_LEN]  # truncate to safe length
 
-       # language detection
-       try:
-           lang = get_language(post)
-           lang = lang.strip().lower() if isinstance(lang, str) else ""
-       except Exception:
-           return (False, post)
+        # language detection
+        try:
+            lang = get_language(post)
+            lang = lang.strip().lower() if isinstance(lang, str) else ""
+        except Exception:
+            return (False, post)
 
-       if "english" in lang:
-           return (True, post)
+        if "english" in lang:
+            return (True, post)
 
-       # translation
-       try:
-           translation = get_translation(post)
-           if not isinstance(translation, str):
-               translation = ""
-           translation = translation.strip().replace("\x00", "")
-       except Exception:
-           return (False, post)
+        # translation
+        try:
+            translation = get_translation(post)
+            if not isinstance(translation, str):
+                translation = ""
+            translation = translation.strip().replace("\x00", "")
+        except Exception:
+            return (False, post)
 
-       # if translation empty or suspicious, return original
-       if not translation or len(translation) > MAX_LEN:
-           return (False, post)
+        # if translation empty or suspicious, return original
+        if not translation or len(translation) > MAX_LEN:
+            return (False, post)
 
-       # secondary check: ensure translation is in English
-       try:
-           translated_lang = get_language(translation)
-           translated_lang = translated_lang.strip().lower() if isinstance(translated_lang, str) else ""
-           if "english" not in translated_lang:
-               # model didn’t translate properly — fallback to original
-               return (False, post)
-       except Exception:
-           # if language check fails, still fallback safely
-           return (False, post)
+        # secondary check: ensure translation is in English
+        try:
+            translated_lang = get_language(translation)
+            translated_lang = translated_lang.strip().lower(
+            ) if isinstance(translated_lang, str) else ""
+            if "english" not in translated_lang:
+                # model didn’t translate properly — fallback to original
+                return (False, post)
+        except Exception:
+            # if language check fails, still fallback safely
+            return (False, post)
 
-       # successful case
-       return (False, translation)
+        # successful case
+        return (False, translation)
 
     except Exception:
         # last-resort fallback
