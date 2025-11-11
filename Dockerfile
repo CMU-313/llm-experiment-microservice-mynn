@@ -13,5 +13,7 @@ COPY . .
 # Expose the port Flask runs on
 EXPOSE 5000
 
+ENV OLLAMA_HOST=http://128.2.220.232:11434/
+
 # Run the Flask app
-CMD ["OLLAMA_HOST=http://128.2.220.232:11434/", "flask", "run", "--host=0.0.0.0"]
+CMD ["flask", "run", "--host=0.0.0.0"]
