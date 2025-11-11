@@ -9,4 +9,5 @@ dependencies = [
     "pytest==7.4.0",
     "mock==5.2.0",
     "ollama==0.6.0",
+    "sentence-transformers==5.1.2",
 ]
