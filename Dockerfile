@@ -14,4 +14,4 @@ COPY . .
 EXPOSE 5000
 
 # Run the Flask app
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["OLLAMA_HOST=http://128.2.220.232:11434/", "flask", "run", "--host=0.0.0.0"]
