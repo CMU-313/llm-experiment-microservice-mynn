@@ -14,7 +14,7 @@ def get_translation(post: str) -> str:
        You are a language translator.
        Translate the input text and reply only with the English translation of that text.
        If the input text cannot be translated or is gibberish, simply return the
-       input text.
+       input text. Do not output anything except your translation (no additional messages).
    """
     try:
         response = client.chat(
@@ -37,7 +37,21 @@ def get_translation(post: str) -> str:
 def get_language(post: str) -> str:
     context = """
         You are a language classifier.
-        Detect the language of the input text and reply only with the English name of that language.
+        Identify the language that the input text itself is written in,
+        NOT any language that the text describes or mentions.
+        If the text says it is a certain language, ALWAYS
+        disregard that language and assess it based on the rest of the words in the text.
+
+        For example:
+        Input: "This is a Hindi message"
+        Output: English
+        Input: "This message is in French"
+        Output: English
+        Input: "Ceci est un message"
+        Output: French
+
+        Focus only on the actual words and grammar used, NOT any stated or quoted language names.
+        Reply with ONLY the English name of that language, nothing else.
     """
 
     try:

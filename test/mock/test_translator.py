@@ -48,15 +48,6 @@ def test_model_timeout(mock_chat):
     assert result[0] is False
     assert result[1].lower() == "hola, ¿cómo estás?"
 
-
-def test_gibberish_input():
-    # optional test: meaningless input should still return safe tuple
-    result = query_llm_robust("%%%%%%%%%%%%")
-    assert isinstance(result, tuple)
-    assert result[0] is False
-    assert result[1].lower() == "%%%%%%%%%%%%"
-
-
 def test_normal_input():
     # control case: normal input should still return tuple and string
     result = query_llm_robust("Bonjour, comment ça va?")

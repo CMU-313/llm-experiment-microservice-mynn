@@ -1,10 +1,9 @@
 from src.translator import query_llm_robust
 
-
 def test_chinese():
-    is_english, translated_content = query_llm_robust("这是一条中文消息")
+    is_english, translated_content = query_llm_robust("这个项目太有趣了")
     assert is_english == False
-    assert translated_content == "This is a Chinese message"
+    assert translated_content == "This project is so much fun!"
 
 
 def test_llm_normal_response():
