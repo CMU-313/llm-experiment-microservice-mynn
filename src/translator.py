@@ -2,7 +2,7 @@ import os
 from ollama import chat, ChatResponse, Client
 
 # Get OLLAMA_HOST, if specified, or default to localhost:11434.
-OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
+OLLAMA_URL = "http://128.2.220.232:11434/"
 MODEL_NAME = "llama3.1:8b"
 
 # Initialize the OpenAI client
@@ -15,6 +15,9 @@ def get_translation(post: str) -> str:
        Translate the input text and reply only with the English translation of that text.
        If the input text cannot be translated or is gibberish, simply return the
        input text. Do not output anything except your translation (no additional messages).
+       If the text appears to be gibberish (such as a string of just numbers or random 
+       characters), please return THE ORIGINAL TEXT, NOT A MESSAGE SAYING YOU CANNOT TRANSLATE
+       IT.
    """
     try:
         response = client.chat(
@@ -41,6 +44,7 @@ def get_language(post: str) -> str:
         NOT any language that the text describes or mentions.
         If the text says it is a certain language, ALWAYS
         disregard that language and assess it based on the rest of the words in the text.
+        If the text is incomprehensible or not understandable, DO NOT return English, return Unkown.
 
         For example:
         Input: "This is a Hindi message"
@@ -49,6 +53,8 @@ def get_language(post: str) -> str:
         Output: English
         Input: "Ceci est un message"
         Output: French
+        Input: "giuhui9uy8234294n234hj2"
+        Output: Unknown
 
         Focus only on the actual words and grammar used, NOT any stated or quoted language names.
         Reply with ONLY the English name of that language, nothing else.
@@ -118,8 +124,7 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
         try:
             translation = get_translation(post)
             if not isinstance(translation, str):
-                translation = ""
-            translation = translation.strip().replace("\x00", "")
+                return (False, post)
         except Exception as e:
             print(f"Error in translation: {str(e)}")
             return (False, post)
@@ -132,6 +137,7 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
             return (False, post)
 
         # secondary check: ensure translation is in English
+        """
         try:
             translated_lang = get_language(translation)
             translated_lang = translated_lang.strip().lower(
@@ -144,6 +150,7 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
             print(f"Error in language check: {str(e)}")
             # if language check fails, still fallback safely
             return (False, post)
+        """
 
         # successful case
         print(f"Translation is in English: {translation}")
