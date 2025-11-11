@@ -77,9 +77,13 @@ def query_llm(post: str) -> tuple[bool, str]:
 def query_llm_robust(post: str) -> tuple[bool, str]:
     MAX_LEN = 4096
     try:
+        print(f"Received Post: {post}")
+
         # input validation
         if not isinstance(post, str) or not post.strip():
+            print(f"Invalid input: {post}")
             return (False, "[Invalid input]")
+
         if len(post) > MAX_LEN:
             post = post[:MAX_LEN]  # truncate to safe length
 
@@ -90,6 +94,8 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
         except Exception as e:
             print(f"Error in language detection: {str(e)}")
             return (False, post)
+
+        print(f"Language: {lang}")
 
         if "english" in lang:
             return (True, post)
