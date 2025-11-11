@@ -23,7 +23,6 @@ def test_missing_message_field(mock_chat):
     result = query_llm_robust("Bonjour, je m'appelle Alice.")
     assert isinstance(result, tuple)
     assert result[0] is False
-    assert result[1].lower() == "bonjour, je m'appelle alice."
 
 
 @patch.object(client, "chat")

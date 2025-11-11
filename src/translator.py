@@ -2,7 +2,7 @@ import os
 from ollama import chat, ChatResponse, Client
 
 # Get OLLAMA_HOST, if specified, or default to localhost:11434.
-OLLAMA_URL = "http://128.2.220.232:11434/"
+OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 MODEL_NAME = "llama3.1:8b"
 
 # Initialize the OpenAI client
@@ -134,6 +134,9 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
         # if translation empty or suspicious, return original
         if not translation or len(translation) > MAX_LEN:
             print(f"Translation is empty or too long: {translation}")
+            return (False, post)
+        
+        if "[error:" in translation or "[error:" in lang:
             return (False, post)
 
         # secondary check: ensure translation is in English
