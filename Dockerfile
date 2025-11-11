@@ -13,6 +13,7 @@ COPY . .
 # Expose the port Flask runs on
 EXPOSE 5000
 
+ENV PYTHONUNBUFFERED=1
 ENV OLLAMA_HOST=http://128.2.220.232:11434/
 
 # Run the Flask app
