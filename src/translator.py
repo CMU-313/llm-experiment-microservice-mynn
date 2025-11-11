@@ -87,7 +87,8 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
         try:
             lang = get_language(post)
             lang = lang.strip().lower() if isinstance(lang, str) else ""
-        except Exception:
+        except Exception as e:
+            print(f"Error in language detection: {str(e)}")
             return (False, post)
 
         if "english" in lang:
@@ -99,11 +100,15 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
             if not isinstance(translation, str):
                 translation = ""
             translation = translation.strip().replace("\x00", "")
-        except Exception:
+        except Exception as e:
+            print(f"Error in translation: {str(e)}")
             return (False, post)
+
+        print(f"Translation: {translation}")
 
         # if translation empty or suspicious, return original
         if not translation or len(translation) > MAX_LEN:
+            print(f"Translation is empty or too long: {translation}")
             return (False, post)
 
         # secondary check: ensure translation is in English
@@ -112,15 +117,19 @@ def query_llm_robust(post: str) -> tuple[bool, str]:
             translated_lang = translated_lang.strip().lower(
             ) if isinstance(translated_lang, str) else ""
             if "english" not in translated_lang:
+                print(f"Translation is not in English: {translated_lang}")
                 # model didn’t translate properly — fallback to original
                 return (False, post)
-        except Exception:
+        except Exception as e:
+            print(f"Error in language check: {str(e)}")
             # if language check fails, still fallback safely
             return (False, post)
 
         # successful case
+        print(f"Translation is in English: {translation}")
         return (False, translation)
 
-    except Exception:
+    except Exception as e:
         # last-resort fallback
+        print(f"Last-resort fallback error: {str(e)}")
         return (False, post)
